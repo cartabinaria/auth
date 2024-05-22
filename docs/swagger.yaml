@@ -57,8 +57,13 @@ paths:
     get:
       description: |-
         CallbackHandler handles the OAuth callback, obtaining the GitHub's Bearer token
-        for the logged-in user, and generating a wrapper JWT for our upld session.
+        for the logged-in user, and generating a wrapper JWT for our session.
       parameters:
+      - description: code query parameter
+        in: query
+        name: code
+        required: true
+        type: string
       - description: url to redirect if login is successful
         in: query
         name: redirect_uri

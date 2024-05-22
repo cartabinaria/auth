@@ -56,12 +56,19 @@ const docTemplate = `{
         },
         "/login/callback": {
             "get": {
-                "description": "CallbackHandler handles the OAuth callback, obtaining the GitHub's Bearer token\nfor the logged-in user, and generating a wrapper JWT for our upld session.",
+                "description": "CallbackHandler handles the OAuth callback, obtaining the GitHub's Bearer token\nfor the logged-in user, and generating a wrapper JWT for our session.",
                 "tags": [
                     "login"
                 ],
                 "summary": "Login Callback",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "code query parameter",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "url to redirect if login is successful",

@@ -14,6 +14,7 @@ Generate swagger.json with:
 
 ```shell
 swag init -g cmd/login.go
+swag fmt
 ```
 
 To login, in your browser go to:
