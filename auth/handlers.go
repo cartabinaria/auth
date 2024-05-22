@@ -12,8 +12,14 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-// CallbackHandler handles the OAuth callback, obtaining the GitHub's Bearer token
-// for the logged-in user, and generating a wrapper JWT for our upld session.
+// @Summary			Login Callback
+// @Description		CallbackHandler handles the OAuth callback, obtaining the GitHub's Bearer token
+// @Description     for the logged-in user, and generating a wrapper JWT for our upld session.
+// @Tags			login
+// @Param        	redirect_uri    query     string  true  "url to redirect if login is successful"  Url
+// @Success			200 {object} string
+// @Failure			400 {object} util.ApiError
+// @Router			/login/callback [get]
 func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Request) {
 	// TODO: Check the state query parameter for CSRF attacks
 
@@ -83,8 +89,14 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 	http.Redirect(res, req, redirectURI, http.StatusSeeOther)
 }
 
-// LoginHandler handles login requests, redirecting the web client to GitHub's
-// first stage for the OAuth flow, where the user has to grant access to the specified scopes
+// @Summary			Login user
+// @Description		LoginHandler handles login requests, redirecting the web client to GitHub's first stage
+// @Description     for the OAuth flow, where the user has to grant access to the specified scopes
+// @Tags			login
+// @Param        	redirect_uri    query     string  true  "url to redirect if login is successful"  Url
+// @Success			200	{object}	string
+// @Failure			400	{object}	util.ApiError
+// @Router			/login [get]
 func (a *Authenticator) LoginHandler(res http.ResponseWriter, req *http.Request) {
 
 	// Get the client redirect url
@@ -116,6 +128,13 @@ func (a *Authenticator) LoginHandler(res http.ResponseWriter, req *http.Request)
 	http.Redirect(res, req, redirectURL.String(), http.StatusSeeOther)
 }
 
+// @Summary			Logout user
+// @Description		Reset the cookie
+// @Tags			login
+// @Param        	redirect_uri    query     string  true  "url to redirect if login is successful"  Url
+// @Success			200 {object}	string
+// @Failure			400 {object}  	util.ApiError
+// @Router			/logout [get]
 func (a *Authenticator) LogoutHandler(res http.ResponseWriter, req *http.Request) {
 	// Get the client redirect url
 	clientRedirectURL := req.URL.Query().Get("redirect_uri")

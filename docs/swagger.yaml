@@ -1,0 +1,117 @@
+basePath: /
+definitions:
+  auth.User:
+    properties:
+      admin:
+        type: boolean
+      avatarUrl:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      username:
+        type: string
+    type: object
+  util.ApiError:
+    properties:
+      error:
+        type: string
+    type: object
+info:
+  contact:
+    email: gabriele.genovese2@studio.unibo.it
+    name: Gabriele Genovese
+  description: This is a service to handle the login of a user for the csunibo organisation's
+    web-applications.
+  license:
+    name: AGPL-3.0
+    url: https://www.gnu.org/licenses/agpl-3.0.en.html
+  title: Login cs github service API
+  version: "1.0"
+paths:
+  /login:
+    get:
+      description: |-
+        LoginHandler handles login requests, redirecting the web client to GitHub's first stage
+        for the OAuth flow, where the user has to grant access to the specified scopes
+      parameters:
+      - description: url to redirect if login is successful
+        in: query
+        name: redirect_uri
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ApiError'
+      summary: Login user
+      tags:
+      - login
+  /login/callback:
+    get:
+      description: |-
+        CallbackHandler handles the OAuth callback, obtaining the GitHub's Bearer token
+        for the logged-in user, and generating a wrapper JWT for our upld session.
+      parameters:
+      - description: url to redirect if login is successful
+        in: query
+        name: redirect_uri
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ApiError'
+      summary: Login Callback
+      tags:
+      - login
+  /logout:
+    get:
+      description: Reset the cookie
+      parameters:
+      - description: url to redirect if login is successful
+        in: query
+        name: redirect_uri
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ApiError'
+      summary: Logout user
+      tags:
+      - login
+  /whoami:
+    get:
+      description: Return user information if logged in
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.User'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Who am I
+      tags:
+      - login
+swagger: "2.0"

@@ -36,6 +36,14 @@ var (
 	}
 )
 
+// @title			Login cs github service API
+// @version			1.0
+// @description		This is a service to handle the login of a user for the csunibo organisation's web-applications.
+// @contact.name	Gabriele Genovese
+// @contact.email	gabriele.genovese2@studio.unibo.it
+// @license.name	AGPL-3.0
+// @license.url		https://www.gnu.org/licenses/agpl-3.0.en.html
+// @BasePath		/
 func main() {
 	err := loadConfig()
 	if err != nil {

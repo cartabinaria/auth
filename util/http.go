@@ -6,14 +6,14 @@ import (
 	"net/http"
 )
 
-type apiError struct {
+type ApiError struct {
 	Msg string `json:"error"`
 }
 
 func WriteError(res http.ResponseWriter, status int, err string) error {
 	res.WriteHeader(status)
 
-	encodingErr := WriteJson(res, apiError{Msg: err})
+	encodingErr := WriteJson(res, ApiError{Msg: err})
 	if encodingErr != nil {
 		return fmt.Errorf("could not write error to body: %w", encodingErr)
 	}
