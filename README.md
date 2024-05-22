@@ -15,3 +15,15 @@ Generate swagger.json with:
 ```shell
 swag init -g cmd/login.go
 ```
+
+To login, in your browser go to:
+
+```
+http://localhost:3000/login?redirect_uri=http://localhost:3000/whoami
+```
+
+A cookie named `auth` should be set, and then to logout:
+
+```
+http://localhost:3000/logout?redirect_uri=http://localhost:3000/whoami
+```
