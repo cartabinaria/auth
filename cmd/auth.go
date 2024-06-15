@@ -11,8 +11,8 @@ import (
 	"github.com/pelletier/go-toml/v2"
 	"golang.org/x/exp/slog"
 
-	"github.com/csunibo/cs-git-login/auth"
-	"github.com/csunibo/cs-git-login/util"
+	"github.com/csunibo/auth/auth"
+	"github.com/csunibo/auth/pkg/httputil"
 )
 
 type Config struct {
@@ -36,14 +36,14 @@ var (
 	}
 )
 
-//	@title			Login cs github service API
-//	@version		1.0
-//	@description	This is a service to handle the login of a user for the csunibo organisation's web-applications.
-//	@contact.name	Gabriele Genovese
-//	@contact.email	gabriele.genovese2@studio.unibo.it
-//	@license.name	AGPL-3.0
-//	@license.url	https://www.gnu.org/licenses/agpl-3.0.en.html
-//	@BasePath		/
+// @title			Login cs github service API
+// @version		1.0
+// @description	This is a service to handle the login of a user for the csunibo organisation's web-applications.
+// @contact.name	Gabriele Genovese
+// @contact.email	gabriele.genovese2@studio.unibo.it
+// @license.name	AGPL-3.0
+// @license.url	https://www.gnu.org/licenses/agpl-3.0.en.html
+// @BasePath		/
 func main() {
 	err := loadConfig()
 	if err != nil {
@@ -66,7 +66,7 @@ func main() {
 	})
 
 	mux := muxie.NewMux()
-	mux.Use(util.NewCorsMiddleware(config.ClientURLs, true, mux))
+	mux.Use(httputil.NewCorsMiddleware(config.ClientURLs, true, mux))
 
 	// authentication api
 	mux.HandleFunc("/login", authenticator.LoginHandler)

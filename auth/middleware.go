@@ -2,57 +2,58 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
-	"github.com/csunibo/cs-git-login/util"
+	"github.com/csunibo/auth"
+	"github.com/csunibo/auth/pkg/httputil"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func (a *Authenticator) RequireJWTCookie(w http.ResponseWriter, r *http.Request) (*jwt.Token, error) {
-	cookie, err := r.Cookie("auth")
-	if err != nil {
-		_ = util.WriteError(w, http.StatusUnauthorized, "you are not logged in")
-		return nil, err
-	}
-
+func (a *Authenticator) ParseJWTCookie(cookie string, w http.ResponseWriter, r *http.Request) (*jwt.Token, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		return a.signingKey, nil
 	}
 
-	parsedToken, err := jwt.Parse(cookie.Value, keyFunc)
+	parsedToken, err := jwt.Parse(cookie, keyFunc)
 	if err != nil {
-		_ = util.WriteError(w, http.StatusUnauthorized, "invalid token")
-		return nil, err
+		return nil, fmt.Errorf("invalid JWT token: %v", err)
 	}
 
 	return parsedToken, nil
 }
 
 func (a *Authenticator) Middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		if req.Method == http.MethodOptions {
-			next.ServeHTTP(res, req)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
 		} else {
-			parsedToken, err := a.RequireJWTCookie(res, req)
+			cookie, err := r.Cookie("auth")
 			if err != nil {
+				httputil.WriteError(w, http.StatusUnauthorized, "you are not logged in")
+				return
+			}
+			parsedToken, err := a.ParseJWTCookie(cookie.Value, w, r)
+			if err != nil {
+				httputil.WriteError(w, http.StatusUnauthorized, "invalid JWT token")
 				return
 			}
 
 			userMap, ok := parsedToken.Claims.(jwt.MapClaims)["user"].(map[string]interface{})
 			if !ok {
-				_ = util.WriteError(res, http.StatusUnauthorized, "could not read JWT contents")
+				httputil.WriteError(w, http.StatusUnauthorized, "could not read JWT contents")
 				return
 			}
-			user := User{
+			user := auth.User{
 				Username:  userMap["username"].(string),
 				AvatarUrl: userMap["avatarUrl"].(string),
 				Name:      userMap["name"].(string),
 				Email:     userMap["email"].(string),
 				Admin:     userMap["admin"].(bool),
 			}
-			ctx := context.WithValue(req.Context(), AuthContextKey, user)
+			ctx := context.WithValue(r.Context(), AuthContextKey, user)
 
-			next.ServeHTTP(res, req.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
 }

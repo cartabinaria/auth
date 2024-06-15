@@ -1,4 +1,4 @@
-module github.com/csunibo/cs-git-login
+module github.com/csunibo/auth
 
 go 1.22.3
 

@@ -1,4 +1,4 @@
-# `cs-git-login`
+# `auth`
 
 Progetto che permette agli studenti di accedere ai servizi di csunibo collegando il proprio account Github.
 

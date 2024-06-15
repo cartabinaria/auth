@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/csunibo/auth"
 )
 
 const (
@@ -46,14 +48,6 @@ func NewAuthenticator(config *Config) *Authenticator {
 		expiration:   config.Expiration,
 	}
 	return &authenticator
-}
-
-type User struct {
-	Username  string `json:"username"`
-	AvatarUrl string `json:"avatarUrl"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	Admin     bool   `json:"admin"`
 }
 
 type GithubData struct {
@@ -125,7 +119,7 @@ type GithubMemberUserResponse struct {
 	Role    string `json:"role,omitempty"`
 }
 
-func (a *Authenticator) getUser(token string, res http.ResponseWriter, req *http.Request) (*User, error) {
+func (a *Authenticator) getUser(token string, res http.ResponseWriter, req *http.Request) (*auth.User, error) {
 	reqHttp, err := http.NewRequest(http.MethodGet, GithubUserURL.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not construct GitHub's user request: %w", err)
@@ -153,7 +147,7 @@ func (a *Authenticator) getUser(token string, res http.ResponseWriter, req *http
 		return nil, fmt.Errorf("could not check admin: %w", err)
 	}
 
-	return &User{
+	return &auth.User{
 		Username:  githubRes.Login,
 		AvatarUrl: githubRes.AvatarUrl,
 		Name:      githubRes.Name,

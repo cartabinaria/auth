@@ -1,7 +1,8 @@
-package util
+package httputil
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/kataras/muxie"
 )
@@ -9,7 +10,7 @@ import (
 func NewCorsMiddleware(origin []string, allowCredentials bool, handler http.Handler) muxie.Wrapper {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-			if req.Header.Get("origin") == "http://localhost:3001" || req.Header.Get("origin") == "http://localhost:5173" {
+			if strings.Contains(req.Header.Get("origin"), "http://localhost") {
 				res.Header().Set("Access-Control-Allow-Origin", req.Header.Get("origin"))
 			}
 			res.Header().Set("Access-Control-Allow-Credentials", "true")

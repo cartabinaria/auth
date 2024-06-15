@@ -7,26 +7,26 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/csunibo/cs-git-login/util"
+	"github.com/csunibo/auth/pkg/httputil"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/exp/slog"
 )
 
-//	@Summary		Login Callback
-//	@Description	CallbackHandler handles the OAuth callback, obtaining the GitHub's Bearer token
-//	@Description	for the logged-in user, and generating a wrapper JWT for our session.
-//	@Tags			login
-//	@Param			code			query		string	true	"code query parameter"
-//	@Param			redirect_uri	query		string	true	"url to redirect if login is successful"
-//	@Success		200				{object}	string
-//	@Failure		400				{object}	util.ApiError
-//	@Router			/login/callback [get]
+// @Summary		Login Callback
+// @Description	CallbackHandler handles the OAuth callback, obtaining the GitHub's Bearer token
+// @Description	for the logged-in user, and generating a wrapper JWT for our session.
+// @Tags			login
+// @Param			code			query		string	true	"code query parameter"
+// @Param			redirect_uri	query		string	true	"url to redirect if login is successful"
+// @Success		200				{object}	string
+// @Failure		400				{object}	httputil.ApiError
+// @Router			/login/callback [get]
 func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Request) {
 	// TODO: Check the state query parameter for CSRF attacks
 
 	query := req.URL.Query()
 	if query.Has("error") {
-		_ = util.WriteError(res, http.StatusInternalServerError, "internal error while parsing the callback")
+		httputil.WriteError(res, http.StatusInternalServerError, "internal error while parsing the callback")
 		slog.Error("error while parsing redirect callback",
 			"error", query.Get("error"),
 			"description", query.Get("error_description"),
@@ -36,26 +36,26 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 
 	authCode := query.Get("code")
 	if authCode == "" {
-		_ = util.WriteError(res, http.StatusBadRequest, "missing the code query parameter")
+		httputil.WriteError(res, http.StatusBadRequest, "missing the code query parameter")
 		return
 	}
 
 	redirectURI := query.Get("redirect_uri")
 	if redirectURI == "" {
-		_ = util.WriteError(res, http.StatusBadRequest, "missing the redirect_uri query parameter")
+		httputil.WriteError(res, http.StatusBadRequest, "missing the redirect_uri query parameter")
 		return
 	}
 
 	token, err := a.getToken(authCode)
 	if err != nil {
-		_ = util.WriteError(res, http.StatusBadRequest, "could not fetch the bearer token from GitHub")
+		httputil.WriteError(res, http.StatusBadRequest, "could not fetch the bearer token from GitHub")
 		slog.Error("error while getting the bearer token", "error", err)
 		return
 	}
 
 	user, err := a.getUser(token, res, req)
 	if err != nil {
-		_ = util.WriteError(res, http.StatusInternalServerError, "could not fetch the user data from GitHub")
+		httputil.WriteError(res, http.StatusInternalServerError, "could not fetch the user data from GitHub")
 		slog.Error("error while fetching user data from github", "error", err)
 		return
 	}
@@ -72,7 +72,7 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 
 	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(a.signingKey)
 	if err != nil {
-		_ = util.WriteError(res, http.StatusInternalServerError, "could not sign session token")
+		httputil.WriteError(res, http.StatusInternalServerError, "could not sign session token")
 		return
 	}
 
@@ -90,20 +90,19 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 	http.Redirect(res, req, redirectURI, http.StatusSeeOther)
 }
 
-//	@Summary		Login user
-//	@Description	LoginHandler handles login requests, redirecting the web client to GitHub's first stage
-//	@Description	for the OAuth flow, where the user has to grant access to the specified scopes
-//	@Tags			login
-//	@Param			redirect_uri	query		string	true	"url to redirect if login is successful"	Url
-//	@Success		200				{object}	string
-//	@Failure		400				{object}	util.ApiError
-//	@Router			/login [get]
+// @Summary		Login user
+// @Description	LoginHandler handles login requests, redirecting the web client to GitHub's first stage
+// @Description	for the OAuth flow, where the user has to grant access to the specified scopes
+// @Tags			login
+// @Param			redirect_uri	query		string	true	"url to redirect if login is successful"	Url
+// @Success		200				{object}	string
+// @Failure		400				{object}	httputil.ApiError
+// @Router			/login [get]
 func (a *Authenticator) LoginHandler(res http.ResponseWriter, req *http.Request) {
-
 	// Get the client redirect url
 	clientRedirectURL := req.URL.Query().Get("redirect_uri")
 	if clientRedirectURL == "" {
-		_ = util.WriteError(res, http.StatusBadRequest, "specify a redirect_uri url param")
+		httputil.WriteError(res, http.StatusBadRequest, "specify a redirect_uri url param")
 		return
 	}
 
@@ -129,18 +128,18 @@ func (a *Authenticator) LoginHandler(res http.ResponseWriter, req *http.Request)
 	http.Redirect(res, req, redirectURL.String(), http.StatusSeeOther)
 }
 
-//	@Summary		Logout user
-//	@Description	Reset the cookie
-//	@Tags			login
-//	@Param			redirect_uri	query		string	true	"url to redirect if login is successful"	Url
-//	@Success		200				{object}	string
-//	@Failure		400				{object}	util.ApiError
-//	@Router			/logout [get]
+// @Summary		Logout user
+// @Description	Reset the cookie
+// @Tags			login
+// @Param			redirect_uri	query		string	true	"url to redirect if login is successful"	Url
+// @Success		200				{object}	string
+// @Failure		400				{object}	httputil.ApiError
+// @Router			/logout [get]
 func (a *Authenticator) LogoutHandler(res http.ResponseWriter, req *http.Request) {
 	// Get the client redirect url
 	clientRedirectURL := req.URL.Query().Get("redirect_uri")
 	if clientRedirectURL == "" {
-		_ = util.WriteError(res, http.StatusBadRequest, "specify a redirect_uri url param")
+		httputil.WriteError(res, http.StatusBadRequest, "specify a redirect_uri url param")
 		return
 	}
 
@@ -163,12 +162,13 @@ func (a *Authenticator) LogoutHandler(res http.ResponseWriter, req *http.Request
 }
 
 func (a *Authenticator) CheckMembership(token string, login string) (bool, error) {
-	reqHttp, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s", GithubMemberURL.String(), login), nil)
+	reqHttp, err := http.NewRequest(http.MethodGet, GithubMemberURL.JoinPath(login).String(), nil)
 	if err != nil {
 		return false, fmt.Errorf("could not construct GitHub's user request: %w", err)
 	}
 	reqHttp.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	reqHttp.Header.Set("Accept", "application/vnd.github+json")
+
 	resHttp, err := client.Do(reqHttp)
 	if err != nil {
 		return false, fmt.Errorf("could not send GitHub's user request: %w", err)
@@ -183,7 +183,6 @@ func (a *Authenticator) CheckMembership(token string, login string) (bool, error
 	if err != nil {
 		return false, fmt.Errorf("could not close body: %w", err)
 	}
-
 	if githubRes.Message != "" {
 		return true, nil
 	}
