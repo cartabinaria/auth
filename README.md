@@ -7,13 +7,13 @@ Progetto che permette agli studenti di accedere ai servizi di csunibo collegando
 Run tool with:
 
 ```shell
-go run cmd/login.go
+go run cmd/auth.go
 ```
 
 Generate swagger.json with:
 
 ```shell
-swag init -g cmd/login.go
+swag init -g cmd/auth.go
 swag fmt
 ```
 
