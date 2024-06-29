@@ -30,6 +30,7 @@ type Config struct {
 	BaseURL      *url.URL      // The base URL from where csunibo/upld is being served from
 	SigningKey   []byte        // The key to sign the JWTs with
 	Expiration   time.Duration // How long should user sessions last?
+	CookieDomain string        // The domain for the generated cookies
 }
 
 type Authenticator struct {
@@ -38,6 +39,7 @@ type Authenticator struct {
 	baseURL      *url.URL
 	expiration   time.Duration
 	signingKey   []byte
+	cookieDomain string
 }
 
 func NewAuthenticator(config *Config) *Authenticator {
@@ -47,6 +49,7 @@ func NewAuthenticator(config *Config) *Authenticator {
 		baseURL:      config.BaseURL,
 		signingKey:   config.SigningKey,
 		expiration:   config.Expiration,
+		cookieDomain: config.CookieDomain,
 	}
 	return &authenticator
 }

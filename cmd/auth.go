@@ -16,9 +16,10 @@ import (
 )
 
 type Config struct {
-	Listen     string   `toml:"listen"`
-	BaseURL    string   `toml:"base_url"`
-	ClientURLs []string `toml:"client_urls"`
+	Listen       string   `toml:"listen"`
+	BaseURL      string   `toml:"base_url"`
+	ClientURLs   []string `toml:"client_urls"`
+	CookieDomain string   `toml:"cookie_domain"`
 
 	DbURI                string        `toml:"db_uri" required:"true"`
 	OAuthClientID        string        `toml:"oauth_client_id" required:"true"`
@@ -63,6 +64,7 @@ func main() {
 		ClientSecret: config.OAuthClientSecret,
 		SigningKey:   []byte(config.OAuthSigningKey),
 		Expiration:   config.OAuthSessionDuration,
+		CookieDomain: config.CookieDomain,
 	})
 
 	mux := muxie.NewMux()
