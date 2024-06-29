@@ -183,7 +183,7 @@ func (a *Authenticator) CheckMembership(token string, login string) (bool, error
 	if err != nil {
 		return false, fmt.Errorf("could not close body: %w", err)
 	}
-	if githubRes.Message != "" {
+	if githubRes.Role == ADMIN_ROLE {
 		return true, nil
 	}
 
