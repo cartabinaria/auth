@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/csunibo/auth"
+	"github.com/cartabinaria/auth"
 )
 
 const (
@@ -20,14 +20,14 @@ var (
 	GithubAuthorizeURL, _   = url.Parse("https://github.com/login/oauth/authorize")
 	GithubAccessTokenURL, _ = url.Parse("https://github.com/login/oauth/access_token")
 	GithubUserURL, _        = url.Parse("https://api.github.com/user")
-	GithubMemberURL, _      = url.Parse("https://api.github.com/orgs/csunibo/memberships/")
+	GithubMemberURL, _      = url.Parse("https://api.github.com/orgs/cartabinaria/memberships/")
 	client                  = http.DefaultClient
 )
 
 type Config struct {
 	ClientID     string        // The OAuth client ID
 	ClientSecret string        // The OAuth client secret
-	BaseURL      *url.URL      // The base URL from where csunibo/upld is being served from
+	BaseURL      *url.URL      // The base URL from where cartabinaria/upld is being served from
 	SigningKey   []byte        // The key to sign the JWTs with
 	Expiration   time.Duration // How long should user sessions last?
 	CookieDomain string        // The domain for the generated cookies

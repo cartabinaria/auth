@@ -191,7 +191,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Login cs github service API",
-	Description:      "This is a service to handle the login of a user for the csunibo organisation's web-applications.",
+	Description:      "This is a service to handle the login of a user for the cartabinaria organisation's web-applications.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

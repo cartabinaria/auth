@@ -8,8 +8,8 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 
-	"github.com/csunibo/auth"
-	"github.com/csunibo/auth/pkg/httputil"
+	"github.com/cartabinaria/auth"
+	"github.com/cartabinaria/auth/pkg/httputil"
 )
 
 type AuthMiddleware struct {

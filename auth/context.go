@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/csunibo/auth"
+	"github.com/cartabinaria/auth"
 	"net/http"
 )
 

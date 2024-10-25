@@ -1,6 +1,7 @@
 # `auth`
 
-Progetto che permette agli studenti di accedere ai servizi di csunibo collegando il proprio account Github.
+Progetto che permette agli studenti di accedere ai servizi di CartaBinaria
+collegando il proprio account Github.
 
 ## Usage
 

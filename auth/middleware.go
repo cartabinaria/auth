@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/csunibo/auth"
-	"github.com/csunibo/auth/pkg/httputil"
+	"github.com/cartabinaria/auth"
+	"github.com/cartabinaria/auth/pkg/httputil"
 	"github.com/golang-jwt/jwt/v5"
 )
 

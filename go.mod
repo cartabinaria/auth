@@ -1,4 +1,4 @@
-module github.com/csunibo/auth
+module github.com/cartabinaria/auth
 
 go 1.22.3
 

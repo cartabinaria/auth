@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/csunibo/auth/pkg/httputil"
+	"github.com/cartabinaria/auth/pkg/httputil"
 )
 
 // @Summary		Who am I

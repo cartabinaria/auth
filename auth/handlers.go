@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/csunibo/auth/pkg/httputil"
+	"github.com/cartabinaria/auth/pkg/httputil"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/exp/slog"
 )
