@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/cookiejar"
@@ -76,9 +77,12 @@ func (a *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			user   auth.User
 			apiErr httputil.ApiError
 		)
-		err = json.NewDecoder(res.Body).Decode(&user)
+
+		bodyBytes, err := io.ReadAll(res.Body)
+
+		err = json.Unmarshal(bodyBytes, &user)
 		if err != nil {
-			err = json.NewDecoder(res.Body).Decode(&apiErr)
+			err = json.Unmarshal(bodyBytes, &apiErr)
 			if err != nil {
 				httputil.WriteError(w, http.StatusUnauthorized, "you are not logged in")
 				slog.Error("auth server returned unexpected response", "err", err)
