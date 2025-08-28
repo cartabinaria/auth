@@ -21,7 +21,6 @@ type Config struct {
 	ClientURLs   []string `toml:"client_urls"`
 	CookieDomain string   `toml:"cookie_domain"`
 
-	DbURI                string        `toml:"db_uri" required:"true"`
 	OAuthClientID        string        `toml:"oauth_client_id" required:"true"`
 	OAuthClientSecret    string        `toml:"oauth_client_secret" required:"true"`
 	OAuthSigningKey      string        `toml:"oauth_signing_key" required:"true"`
