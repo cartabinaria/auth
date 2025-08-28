@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,7 +24,30 @@ import (
 // @Failure		400				{object}	httputil.ApiError
 // @Router			/login/callback [get]
 func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Request) {
-	// TODO: Check the state query parameter for CSRF attacks
+	// Check the state query parameter for CSRF attacks
+	state := req.URL.Query().Get("state")
+	oauthState, err := req.Cookie("oauthstate")
+	if err != nil {
+		httputil.WriteError(res, http.StatusBadRequest, "missing state cookie")
+		slog.Error("missing oauthstate cookie", "error", err)
+		return
+	}
+
+	// Invalidate the cookie after checking it
+	http.SetCookie(res, &http.Cookie{
+		Name:     "oauthstate",
+		Value:    "",
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	if state != oauthState.Value {
+		httputil.WriteError(res, http.StatusBadRequest, "invalid state parameter")
+		slog.Error("invalid state parameter", "expected", oauthState.Value, "got", state)
+		return
+	}
 
 	query := req.URL.Query()
 	if query.Has("error") {
@@ -122,9 +147,29 @@ func (a *Authenticator) LoginHandler(res http.ResponseWriter, req *http.Request)
 	query.Set("client_id", a.clientID)
 	query.Set("redirect_uri", redirectCallbackURL.String())
 	query.Set("scope", SCOPES)
-	redirectURL.RawQuery = query.Encode()
 
-	// TODO: add the state query parameter to protect against CSRF
+	// Generate random state
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		httputil.WriteError(res, http.StatusInternalServerError, "could not generate state")
+		slog.Error("could not generate random bytes for state", "error", err)
+		return
+	}
+	state := hex.EncodeToString(b)
+
+	// Set state in a cookie
+	http.SetCookie(res, &http.Cookie{
+		Name:     "oauthstate",
+		Value:    state,
+		Expires:  time.Now().Add(10 * time.Minute),
+		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	// Add state to the authorization url
+	query.Set("state", state)
+	redirectURL.RawQuery = query.Encode()
 
 	http.Redirect(res, req, redirectURL.String(), http.StatusSeeOther)
 }
