@@ -95,6 +95,7 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 		"exp":   exp.Unix(),
 		"token": token,
 		"user":  user,
+		"id":    user.ID,
 	}
 
 	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(a.signingKey)
