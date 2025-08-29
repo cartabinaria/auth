@@ -112,13 +112,14 @@ func (a *Authenticator) getToken(authCode string) (string, error) {
 }
 
 type GithubUserResponse struct {
-	Id        int    `json:"id"`
+	ID        uint   `json:"id"`
 	Name      string `json:"name"`
 	AvatarUrl string `json:"avatar_url"`
 	Email     string `json:"email"`
 	Login     string `json:"login"`
 	Url       string `json:"url"`
 }
+
 type GithubMemberUserResponse struct {
 	Message string `json:"message,omitempty"`
 	Role    string `json:"role,omitempty"`
@@ -158,5 +159,6 @@ func (a *Authenticator) getUser(token string, res http.ResponseWriter, req *http
 		Name:      githubRes.Name,
 		Email:     githubRes.Email,
 		Admin:     admin,
+		ID:        githubRes.ID,
 	}, nil
 }
