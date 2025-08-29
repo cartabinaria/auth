@@ -13,7 +13,7 @@ import (
 
 const (
 	SCOPES     = "read:user,user:email,read:org,read:members"
-	ADMIN_ROLE = "member"
+	ADMIN_ROLE = "admin"
 )
 
 var (
