@@ -34,12 +34,13 @@ type Config struct {
 }
 
 type Authenticator struct {
-	clientID     string
-	clientSecret string
-	baseURL      *url.URL
-	expiration   time.Duration
-	signingKey   []byte
-	cookieDomain string
+	clientID       string
+	clientSecret   string
+	baseURL        *url.URL
+	expiration     time.Duration
+	signingKey     []byte
+	cookieDomain   string
+	cookieHttpOnly bool
 }
 
 func NewAuthenticator(config *Config) *Authenticator {

@@ -108,7 +108,7 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 		Domain:   a.cookieDomain,
 		Secure:   false,
 		SameSite: http.SameSiteNoneMode,
-		HttpOnly: true,
+		HttpOnly: a.cookieHttpOnly,
 		Path:     "/",
 	}
 
