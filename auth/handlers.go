@@ -38,9 +38,11 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 		Name:     "oauthstate",
 		Value:    "",
 		Expires:  time.Unix(0, 0),
+		Domain:   a.cookieDomain,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
 		HttpOnly: true,
 		Path:     "/",
-		SameSite: http.SameSiteLaxMode,
 	})
 
 	if state != oauthState.Value {
@@ -108,7 +110,7 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 		Domain:   a.cookieDomain,
 		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
-		HttpOnly: a.cookieHttpOnly,
+		HttpOnly: true,
 		Path:     "/",
 	}
 
@@ -198,7 +200,7 @@ func (a *Authenticator) LogoutHandler(res http.ResponseWriter, req *http.Request
 		Value:    "",
 		Expires:  time.Unix(0, 0),
 		Domain:   a.cookieDomain,
-		Secure:   false,
+		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
 		HttpOnly: true,
 		Path:     "/",

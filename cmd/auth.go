@@ -16,11 +16,10 @@ import (
 )
 
 type Config struct {
-	Listen         string   `toml:"listen"`
-	BaseURL        string   `toml:"base_url"`
-	ClientURLs     []string `toml:"client_urls"`
-	CookieDomain   string   `toml:"cookie_domain"`
-	CookieHttpOnly bool     `toml:"cookie_http_only"`
+	Listen       string   `toml:"listen"`
+	BaseURL      string   `toml:"base_url"`
+	ClientURLs   []string `toml:"client_urls"`
+	CookieDomain string   `toml:"cookie_domain"`
 
 	OAuthClientID        string        `toml:"oauth_client_id" required:"true"`
 	OAuthClientSecret    string        `toml:"oauth_client_secret" required:"true"`

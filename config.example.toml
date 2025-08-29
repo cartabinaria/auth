@@ -2,7 +2,6 @@ listen = "0.0.0.0:3000"
 base_url = "http://localhost:3000"
 client_urls = ["http://localhost:5173"]
 cookie_domain = ".students.cs.unibo.it"
-cookie_https_only = false
 
 oauth_client_id = ""
 oauth_client_secret = ""
