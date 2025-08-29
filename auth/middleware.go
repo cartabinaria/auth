@@ -11,7 +11,7 @@ import (
 )
 
 func (a *Authenticator) ParseJWTCookie(cookie string, w http.ResponseWriter, r *http.Request) (*jwt.Token, error) {
-	keyFunc := func(token *jwt.Token) (interface{}, error) {
+	keyFunc := func(token *jwt.Token) (any, error) {
 		return a.signingKey, nil
 	}
 
@@ -39,13 +39,14 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 				return
 			}
 
-			userMap, ok := parsedToken.Claims.(jwt.MapClaims)["user"].(map[string]interface{})
+			userMap, ok := parsedToken.Claims.(jwt.MapClaims)["user"].(map[string]any)
 			if !ok {
 				httputil.WriteError(w, http.StatusUnauthorized, "could not read JWT contents")
 				return
 			}
 			user := auth.User{
 				Username:  userMap["username"].(string),
+				ID:        userMap["id"].(uint),
 				AvatarUrl: userMap["avatarUrl"].(string),
 				Name:      userMap["name"].(string),
 				Email:     userMap["email"].(string),

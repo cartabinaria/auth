@@ -6,4 +6,5 @@ type User struct {
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 	Admin     bool   `json:"admin"`
+	ID        uint   `json:"id"`
 }
