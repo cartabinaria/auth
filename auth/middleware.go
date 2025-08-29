@@ -46,7 +46,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			}
 			user := auth.User{
 				Username:  userMap["username"].(string),
-				ID:        userMap["id"].(uint),
+				ID:        uint(userMap["id"].(float64)),
 				AvatarUrl: userMap["avatarUrl"].(string),
 				Name:      userMap["name"].(string),
 				Email:     userMap["email"].(string),
