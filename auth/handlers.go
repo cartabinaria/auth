@@ -106,7 +106,7 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 		Value:    tokenString,
 		Expires:  time.Now().Add(a.expiration),
 		Domain:   a.cookieDomain,
-		Secure:   false,
+		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
 		HttpOnly: a.cookieHttpOnly,
 		Path:     "/",
