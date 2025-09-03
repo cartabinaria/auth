@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -20,7 +21,15 @@ type AuthMiddleware struct {
 const WhoamiEndpoint = "whoami"
 const AuthContextKey = "auth"
 
-func GetUser(req *http.Request) auth.User {
+func GetUser(req *http.Request) (auth.User, error) {
+	user, ok := req.Context().Value(AuthContextKey).(auth.User)
+	if !ok {
+		return auth.User{}, fmt.Errorf("Could not get the User out of the context")
+	}
+	return user, nil
+}
+
+func MustGetUser(req *http.Request) auth.User {
 	user, ok := req.Context().Value(AuthContextKey).(auth.User)
 	if !ok {
 		panic("Could not get the User out of the context")
@@ -29,7 +38,10 @@ func GetUser(req *http.Request) auth.User {
 }
 
 func GetAdmin(req *http.Request) bool {
-	user := GetUser(req)
+	user, err := GetUser(req)
+	if err != nil {
+		return false
+	}
 	return user.Admin
 }
 
@@ -139,7 +151,7 @@ func (a *AuthMiddleware) NonBlockingHandler(next http.Handler) http.Handler {
 		err = json.Unmarshal(bodyBytes, &user)
 		if err != nil {
 			err = json.Unmarshal(bodyBytes, &apiErr)
-            if err != nil {
+			if err != nil {
 				slog.Debug("Passing request to next handler without auth context")
 			} else {
 				slog.With("err", err).Debug("Passing request to next handler without auth context")
