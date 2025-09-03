@@ -102,8 +102,7 @@ func (a *AuthMiddleware) NonBlockingHandler(next http.Handler) http.Handler {
 		cookie, err := r.Cookie("auth")
 		if err != nil {
 			slog.Debug("Passing request to next handler without auth context")
-			ctx := context.WithValue(r.Context(), AuthContextKey, nil)
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r)
 			return
 		}
 
@@ -123,8 +122,8 @@ func (a *AuthMiddleware) NonBlockingHandler(next http.Handler) http.Handler {
 
 		req, err := http.NewRequest(http.MethodGet, a.authServer.JoinPath(WhoamiEndpoint).String(), nil)
 		if err != nil {
-			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
-			slog.Error("error while creating the request to auth server", "err", err)
+			slog.Debug("Passing request to next handler without auth context")
+			next.ServeHTTP(w, r)
 			return
 		}
 
@@ -140,15 +139,12 @@ func (a *AuthMiddleware) NonBlockingHandler(next http.Handler) http.Handler {
 		err = json.Unmarshal(bodyBytes, &user)
 		if err != nil {
 			err = json.Unmarshal(bodyBytes, &apiErr)
-			if err != nil {
+            if err != nil {
 				slog.Debug("Passing request to next handler without auth context")
-				ctx := context.WithValue(r.Context(), AuthContextKey, nil)
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
+			} else {
+				slog.With("err", err).Debug("Passing request to next handler without auth context")
 			}
-			slog.Debug("Passing request to next handler without auth context")
-			ctx := context.WithValue(r.Context(), AuthContextKey, nil)
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r)
 			return
 		}
 
