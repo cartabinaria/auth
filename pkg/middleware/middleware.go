@@ -96,3 +96,63 @@ func (a *AuthMiddleware) Handler(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+
+func (a *AuthMiddleware) NonBlockingHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("auth")
+		if err != nil {
+			slog.Debug("Passing request to next handler without auth context")
+			ctx := context.WithValue(r.Context(), AuthContextKey, nil)
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		jar, err := cookiejar.New(nil)
+		if err != nil {
+			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
+			slog.Error("error while creating cookie jar (for authentication)", "err", err)
+			return
+		}
+
+		slog.Debug("forwarding cookie to auth service", "cookie", cookie.String())
+		jar.SetCookies(a.authServer, []*http.Cookie{cookie})
+
+		client := &http.Client{
+			Jar: jar,
+		}
+
+		req, err := http.NewRequest(http.MethodGet, a.authServer.JoinPath(WhoamiEndpoint).String(), nil)
+		if err != nil {
+			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
+			slog.Error("error while creating the request to auth server", "err", err)
+			return
+		}
+
+		req.Header.Set("Accept", "application/json")
+		res, err := client.Do(req)
+		var (
+			user   auth.User
+			apiErr httputil.ApiError
+		)
+
+		bodyBytes, err := io.ReadAll(res.Body)
+
+		err = json.Unmarshal(bodyBytes, &user)
+		if err != nil {
+			err = json.Unmarshal(bodyBytes, &apiErr)
+			if err != nil {
+				slog.Debug("Passing request to next handler without auth context")
+				ctx := context.WithValue(r.Context(), AuthContextKey, nil)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+			slog.Debug("Passing request to next handler without auth context")
+			ctx := context.WithValue(r.Context(), AuthContextKey, nil)
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), AuthContextKey, user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
