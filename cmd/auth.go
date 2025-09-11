@@ -21,18 +21,19 @@ type Config struct {
 	ClientURLs   []string `toml:"client_urls"`
 	CookieDomain string   `toml:"cookie_domain"`
 
-	OAuthClientID        string        `toml:"oauth_client_id" required:"true"`
-	OAuthClientSecret    string        `toml:"oauth_client_secret" required:"true"`
-	OAuthSigningKey      string        `toml:"oauth_signing_key" required:"true"`
-	OAuthSessionDuration time.Duration `toml:"oauth_session_duration"`
+	OAuthClientID                string        `toml:"oauth_client_id" required:"true"`
+	OAuthClientSecret            string        `toml:"oauth_client_secret" required:"true"`
+	OAuthSigningKey              string        `toml:"oauth_signing_key" required:"true"`
+	OAuthSessionDurationInternal time.Duration `toml:"-"`
+	OAuthSessionDuration         string        `toml:"oauth_session_duration"`
 }
 
 var (
 	// Default config values
 	config = Config{
-		Listen:               "0.0.0.0:3000",
-		BaseURL:              "http://localhost:3000",
-		OAuthSessionDuration: time.Hour * 12,
+		Listen:                       "0.0.0.0:3000",
+		BaseURL:                      "http://localhost:3000",
+		OAuthSessionDurationInternal: time.Hour * 12,
 	}
 )
 
@@ -66,7 +67,7 @@ func main() {
 		ClientID:     config.OAuthClientID,
 		ClientSecret: config.OAuthClientSecret,
 		SigningKey:   []byte(config.OAuthSigningKey),
-		Expiration:   config.OAuthSessionDuration,
+		Expiration:   config.OAuthSessionDurationInternal,
 		CookieDomain: config.CookieDomain,
 	})
 
@@ -103,6 +104,11 @@ func loadConfig(path string) (err error) {
 	err = file.Close()
 	if err != nil {
 		return fmt.Errorf("failed to close config file: %w", err)
+	}
+
+	config.OAuthSessionDurationInternal, err = time.ParseDuration(config.OAuthSessionDuration)
+	if err != nil {
+		return fmt.Errorf("failed to parse oauth_session_duration: %w", err)
 	}
 
 	return nil
