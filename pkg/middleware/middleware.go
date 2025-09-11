@@ -91,16 +91,34 @@ func (a *AuthMiddleware) Handler(next http.Handler) http.Handler {
 		)
 
 		bodyBytes, err := io.ReadAll(res.Body)
+		if err != nil {
+			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
+			slog.Error("error while reading the response from auth server", "err", err)
+			return
+		}
+
+		err = json.Unmarshal(bodyBytes, &apiErr)
+		if err != nil {
+			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
+			slog.Error("auth server returned unexpected response", "err", err)
+			return
+		}
+
+		if apiErr.Msg != "" {
+			httputil.WriteError(w, http.StatusUnauthorized, apiErr.Msg)
+			return
+		}
 
 		err = json.Unmarshal(bodyBytes, &user)
 		if err != nil {
-			err = json.Unmarshal(bodyBytes, &apiErr)
-			if err != nil {
-				httputil.WriteError(w, http.StatusUnauthorized, "you are not logged in")
-				slog.Error("auth server returned unexpected response", "err", err)
-				return
-			}
-			httputil.WriteError(w, http.StatusUnauthorized, apiErr.Msg)
+			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
+			slog.Error("auth server returned unexpected response", "err", err)
+			return
+		}
+
+		if user.Username == "" {
+			httputil.WriteError(w, http.StatusUnauthorized, "you are not logged in")
+			slog.Debug("auth server did not return a username")
 			return
 		}
 
