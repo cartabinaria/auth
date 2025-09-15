@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cartabinaria/auth"
+	"golang.org/x/exp/slog"
 )
 
 const (
@@ -152,12 +153,26 @@ func (a *Authenticator) getUser(token string, res http.ResponseWriter, req *http
 		return nil, fmt.Errorf("could not check role: %w", err)
 	}
 
+	var userRole auth.Role
+
+	switch role {
+	case string(auth.RoleAdmin):
+		userRole = auth.RoleAdmin
+	case string(auth.RoleMember):
+		userRole = auth.RoleMember
+	case string(auth.RoleUser):
+		userRole = auth.RoleUser
+	default:
+		slog.Warn(fmt.Sprintf("role %s not recognized", role))
+		userRole = auth.RoleUser
+	}
+
 	return &auth.User{
 		Username:  githubRes.Login,
 		AvatarUrl: githubRes.AvatarUrl,
 		Name:      githubRes.Name,
 		Email:     githubRes.Email,
-		Role:      auth.Role(role),
+		Role:      userRole,
 		ID:        githubRes.ID,
 	}, nil
 }
