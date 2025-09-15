@@ -50,7 +50,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 				AvatarUrl: userMap["avatarUrl"].(string),
 				Name:      userMap["name"].(string),
 				Email:     userMap["email"].(string),
-				Admin:     userMap["admin"].(bool),
+				Role:      userMap["role"].(auth.Role),
 			}
 			ctx := context.WithValue(r.Context(), AuthContextKey, user)
 

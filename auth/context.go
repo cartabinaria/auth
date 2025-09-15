@@ -17,5 +17,10 @@ func GetUser(req *http.Request) auth.User {
 
 func GetAdmin(req *http.Request) bool {
 	user := GetUser(req)
-	return user.Admin
+	return user.Role == auth.RoleAdmin
+}
+
+func GetMember(req *http.Request) bool {
+	user := GetUser(req)
+	return user.Role == auth.RoleMember
 }
