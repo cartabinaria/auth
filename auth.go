@@ -1,10 +1,18 @@
 package auth
 
+type Role string
+
+const (
+	RoleAdmin  Role = "admin"
+	RoleMember Role = "member"
+	RoleUser   Role = "user"
+)
+
 type User struct {
+	ID        uint   `json:"id"`
 	Username  string `json:"username"`
 	AvatarUrl string `json:"avatarUrl"`
 	Name      string `json:"name"`
 	Email     string `json:"email"`
-	Admin     bool   `json:"admin"`
-	ID        uint   `json:"id"`
+	Role      Role   `json:"role"`
 }

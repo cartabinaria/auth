@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	SCOPES     = "read:user,user:email,read:org,read:members"
-	ADMIN_ROLE = "admin"
+	SCOPES = "read:user,user:email,read:org,read:members"
 )
 
 var (
@@ -148,9 +147,9 @@ func (a *Authenticator) getUser(token string, res http.ResponseWriter, req *http
 		return nil, fmt.Errorf("could not close body: %w", err)
 	}
 
-	admin, err := a.CheckMembership(token, githubRes.Login)
+	role, err := a.CheckMembership(token, githubRes.Login)
 	if err != nil {
-		return nil, fmt.Errorf("could not check admin: %w", err)
+		return nil, fmt.Errorf("could not check role: %w", err)
 	}
 
 	return &auth.User{
@@ -158,7 +157,7 @@ func (a *Authenticator) getUser(token string, res http.ResponseWriter, req *http
 		AvatarUrl: githubRes.AvatarUrl,
 		Name:      githubRes.Name,
 		Email:     githubRes.Email,
-		Admin:     admin,
+		Role:      auth.Role(role),
 		ID:        githubRes.ID,
 	}, nil
 }

@@ -42,7 +42,15 @@ func GetAdmin(req *http.Request) bool {
 	if err != nil {
 		return false
 	}
-	return user.Admin
+	return user.Role == auth.RoleAdmin
+}
+
+func GetMember(req *http.Request) bool {
+	user, err := GetUser(req)
+	if err != nil {
+		return false
+	}
+	return user.Role == auth.RoleMember
 }
 
 func NewAuthMiddleware(authServer string) (mid *AuthMiddleware, err error) {

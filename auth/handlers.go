@@ -211,28 +211,31 @@ func (a *Authenticator) LogoutHandler(res http.ResponseWriter, req *http.Request
 	http.Redirect(res, req, clientRedirectURL, http.StatusSeeOther)
 }
 
-func (a *Authenticator) CheckMembership(token string, login string) (bool, error) {
+func (a *Authenticator) CheckMembership(token string, login string) (string, error) {
 	reqHttp, err := http.NewRequest(http.MethodGet, GithubMemberURL.JoinPath(login).String(), nil)
 	if err != nil {
-		return false, fmt.Errorf("could not construct GitHub's user request: %w", err)
+		return "", fmt.Errorf("could not construct GitHub's user request: %w", err)
 	}
 	reqHttp.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	reqHttp.Header.Set("Accept", "application/vnd.github+json")
 
 	resHttp, err := client.Do(reqHttp)
 	if err != nil {
-		return false, fmt.Errorf("could not send GitHub's user request: %w", err)
+		if resHttp.StatusCode == http.StatusNotFound {
+			return "user", nil
+		}
+		return "", fmt.Errorf("could not send GitHub's user request: %w", err)
 	}
 	var githubRes GithubMemberUserResponse
 	err = json.NewDecoder(resHttp.Body).Decode(&githubRes)
 	if err != nil {
-		return false, fmt.Errorf("could not parse GitHub's response: %w", err)
+		return "", fmt.Errorf("could not parse GitHub's response: %w", err)
 	}
 
 	err = resHttp.Body.Close()
 	if err != nil {
-		return false, fmt.Errorf("could not close body: %w", err)
+		return "", fmt.Errorf("could not close body: %w", err)
 	}
 
-	return githubRes.Role == ADMIN_ROLE, nil
+	return githubRes.Role, nil
 }
