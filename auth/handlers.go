@@ -67,9 +67,16 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	redirectURI := query.Get("redirect_uri")
-	if redirectURI == "" {
+	redirectURIString := query.Get("redirect_uri")
+	if redirectURIString == "" {
 		httputil.WriteError(res, http.StatusBadRequest, "missing the redirect_uri query parameter")
+		return
+	}
+
+	redirectURI, err := url.Parse(redirectURIString)
+	if err != nil {
+		httputil.WriteError(res, http.StatusBadRequest, "invalid redirect_uri")
+		slog.Error("invalid redirect_uri", "error", err)
 		return
 	}
 
@@ -115,8 +122,13 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 		Path:     "/",
 	}
 
+	redirectQuery := url.Values{}
+	redirectQuery.Set("session_token", tokenString)
+
+	redirectURI.RawQuery = redirectQuery.Encode()
+
 	http.SetCookie(res, &cookie)
-	http.Redirect(res, req, redirectURI, http.StatusSeeOther)
+	http.Redirect(res, req, redirectURI.String(), http.StatusSeeOther)
 }
 
 // @Summary		Login user

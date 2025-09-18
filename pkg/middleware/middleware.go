@@ -3,11 +3,11 @@ package middleware
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 
 	"github.com/cartabinaria/auth"
@@ -67,66 +67,26 @@ func NewAuthMiddleware(authServer string) (mid *AuthMiddleware, err error) {
 
 func (a *AuthMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var token string
+
 		cookie, err := r.Cookie("auth")
-		if err != nil {
+		if err != nil && !errors.Is(err, http.ErrNoCookie) {
 			httputil.WriteError(w, http.StatusUnauthorized, "you are not logged in")
 			return
+		} else if errors.Is(err, http.ErrNoCookie) {
+			token = r.Header.Get("Authorization")
+			if token == "" {
+				httputil.WriteError(w, http.StatusUnauthorized, "you are not logged in")
+				return
+			}
+		} else {
+			token = cookie.Value
 		}
 
-		jar, err := cookiejar.New(nil)
+		user, returnStatus, err := tryAuth(token, a.authServer.JoinPath(WhoamiEndpoint).String())
 		if err != nil {
-			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
-			slog.Error("error while creating cookie jar (for authentication)", "err", err)
-			return
-		}
-		slog.Debug("forwarding cookie to auth service", "cookie", cookie.String())
-		jar.SetCookies(a.authServer, []*http.Cookie{cookie})
-
-		client := &http.Client{
-			Jar: jar,
-		}
-		req, err := http.NewRequest(http.MethodGet, a.authServer.JoinPath(WhoamiEndpoint).String(), nil)
-		if err != nil {
-			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
-			slog.Error("error while creating the request to auth server", "err", err)
-			return
-		}
-		req.Header.Set("Accept", "application/json")
-		res, err := client.Do(req)
-		var (
-			user   auth.User
-			apiErr httputil.ApiError
-		)
-
-		bodyBytes, err := io.ReadAll(res.Body)
-		if err != nil {
-			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
-			slog.Error("error while reading the response from auth server", "err", err)
-			return
-		}
-
-		err = json.Unmarshal(bodyBytes, &apiErr)
-		if err != nil {
-			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
-			slog.Error("auth server returned unexpected response", "err", err)
-			return
-		}
-
-		if apiErr.Msg != "" {
-			httputil.WriteError(w, http.StatusUnauthorized, apiErr.Msg)
-			return
-		}
-
-		err = json.Unmarshal(bodyBytes, &user)
-		if err != nil {
-			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
-			slog.Error("auth server returned unexpected response", "err", err)
-			return
-		}
-
-		if user.Username == "" {
-			httputil.WriteError(w, http.StatusUnauthorized, "you are not logged in")
-			slog.Debug("auth server did not return a username")
+			slog.Error("error while trying to authenticate user", "err", err)
+			httputil.WriteError(w, returnStatus, err.Error())
 			return
 		}
 
@@ -137,56 +97,73 @@ func (a *AuthMiddleware) Handler(next http.Handler) http.Handler {
 
 func (a *AuthMiddleware) NonBlockingHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		var token string
+
 		cookie, err := r.Cookie("auth")
-		if err != nil {
+		if err != nil && !errors.Is(err, http.ErrNoCookie) {
 			slog.Debug("Passing request to next handler without auth context")
 			next.ServeHTTP(w, r)
 			return
-		}
-
-		jar, err := cookiejar.New(nil)
-		if err != nil {
-			httputil.WriteError(w, http.StatusInternalServerError, "could not check log-in status")
-			slog.Error("error while creating cookie jar (for authentication)", "err", err)
-			return
-		}
-
-		slog.Debug("forwarding cookie to auth service", "cookie", cookie.String())
-		jar.SetCookies(a.authServer, []*http.Cookie{cookie})
-
-		client := &http.Client{
-			Jar: jar,
-		}
-
-		req, err := http.NewRequest(http.MethodGet, a.authServer.JoinPath(WhoamiEndpoint).String(), nil)
-		if err != nil {
-			slog.Debug("Passing request to next handler without auth context")
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		req.Header.Set("Accept", "application/json")
-		res, err := client.Do(req)
-		var (
-			user   auth.User
-			apiErr httputil.ApiError
-		)
-
-		bodyBytes, err := io.ReadAll(res.Body)
-
-		err = json.Unmarshal(bodyBytes, &user)
-		if err != nil {
-			err = json.Unmarshal(bodyBytes, &apiErr)
-			if err != nil {
+		} else if errors.Is(err, http.ErrNoCookie) {
+			token = r.Header.Get("Authorization")
+			if token == "" {
 				slog.Debug("Passing request to next handler without auth context")
-			} else {
-				slog.With("err", err).Debug("Passing request to next handler without auth context")
+				next.ServeHTTP(w, r)
+				return
 			}
-			next.ServeHTTP(w, r)
+		} else {
+			token = cookie.Value
+		}
+
+		user, returnStatus, err := tryAuth(token, a.authServer.JoinPath(WhoamiEndpoint).String())
+		if err != nil {
+			slog.Error("error while trying to authenticate user", "err", err)
+			httputil.WriteError(w, returnStatus, err.Error())
 			return
 		}
 
 		ctx := context.WithValue(r.Context(), AuthContextKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func tryAuth(token, endpoint string) (*auth.User, int, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("could not construct auth server request: %w", err)
+	}
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Accept", "application/json")
+	res, err := client.Do(req)
+	var (
+		user   auth.User
+		apiErr httputil.ApiError
+	)
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("could not read auth server response: %w", err)
+	}
+
+	err = json.Unmarshal(bodyBytes, &apiErr)
+	if err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("auth server returned unexpected response: %w", err)
+	}
+
+	if apiErr.Msg != "" {
+		return nil, http.StatusInternalServerError, fmt.Errorf("auth server returned error: %s", apiErr.Msg)
+	}
+
+	err = json.Unmarshal(bodyBytes, &user)
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("could not parse auth server response: %w", err)
+	}
+
+	if user.Username == "" {
+		return nil, http.StatusUnauthorized, fmt.Errorf("auth server returned empty user")
+	}
+
+	return &user, http.StatusOK, nil
 }

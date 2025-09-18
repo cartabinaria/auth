@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -28,12 +29,23 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 		if r.Method == http.MethodOptions {
 			next.ServeHTTP(w, r)
 		} else {
+			var token string
+
 			cookie, err := r.Cookie("auth")
-			if err != nil {
+			if err != nil && !errors.Is(err, http.ErrNoCookie) {
 				httputil.WriteError(w, http.StatusUnauthorized, "you are not logged in")
 				return
+			} else if errors.Is(err, http.ErrNoCookie) {
+				token = r.Header.Get("Authorization")
+				if token == "" {
+					httputil.WriteError(w, http.StatusUnauthorized, "you are not logged in")
+					return
+				}
+			} else {
+				token = cookie.Value
 			}
-			parsedToken, err := a.ParseJWTCookie(cookie.Value, w, r)
+
+			parsedToken, err := a.ParseJWTCookie(token, w, r)
 			if err != nil {
 				httputil.WriteError(w, http.StatusUnauthorized, "invalid JWT token")
 				return
