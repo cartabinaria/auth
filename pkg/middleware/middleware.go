@@ -90,7 +90,7 @@ func (a *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), AuthContextKey, user)
+		ctx := context.WithValue(r.Context(), AuthContextKey, *user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -123,7 +123,7 @@ func (a *AuthMiddleware) NonBlockingHandler(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), AuthContextKey, user)
+		ctx := context.WithValue(r.Context(), AuthContextKey, *user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
