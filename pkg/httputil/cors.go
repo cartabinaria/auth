@@ -17,7 +17,7 @@ func NewCorsMiddleware(origins []string, allowCredentials bool, handler http.Han
 			// allow pre-flight
 			if req.Method == http.MethodOptions {
 				res.Header().Set("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS, DELETE")
-				res.Header().Set("Access-Control-Allow-Headers", "Content-Type, Origin, Accept, token")
+				res.Header().Set("Access-Control-Allow-Headers", "Content-Type, Origin, Accept, Token, Authorization")
 				res.WriteHeader(http.StatusOK)
 			} else {
 				next.ServeHTTP(res, req)
