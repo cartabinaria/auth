@@ -3,7 +3,6 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,14 +20,17 @@ type StateWithReturnTo struct {
 }
 
 func decodeState(encodedState string) (StateWithReturnTo, error) {
+	var state StateWithReturnTo
+
 	stateBytes, err := base64.URLEncoding.DecodeString(encodedState)
 	if err != nil {
-		slog.Error("Failed to decode base64 state:", "error", err)
+		slog.Error("Failed to decode base64 state", "error", err)
+		return state, fmt.Errorf("failed to decode state: %w", err)
 	}
 
-	var state StateWithReturnTo
 	if err := json.Unmarshal(stateBytes, &state); err != nil {
-		slog.Error("Failed to unmarshal JSON state:", "error", err)
+		slog.Error("Failed to unmarshal JSON state", "error", err)
+		return state, fmt.Errorf("failed to unmarshal state json: %w", err)
 	}
 
 	return state, nil
@@ -213,7 +215,7 @@ func (a *Authenticator) LoginHandler(res http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	csrf := hex.EncodeToString(b)
+	csrf := base64.RawURLEncoding.EncodeToString(b)
 
 	// include return_to into github URL
 	stateObj := StateWithReturnTo{
@@ -227,7 +229,7 @@ func (a *Authenticator) LoginHandler(res http.ResponseWriter, req *http.Request)
 	}
 
 	// url encoding
-	state := base64.URLEncoding.EncodeToString(stateJSON)
+	state := base64.RawURLEncoding.EncodeToString(stateJSON)
 
 	// Set state in a cookie
 	http.SetCookie(res, &http.Cookie{
