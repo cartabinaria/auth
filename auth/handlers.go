@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,25 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/exp/slog"
 )
+
+type StateWithReturnTo struct {
+	ReturnTo string `json:"return_to"`
+	CSRF     string `json:"csrf"`
+}
+
+func decodeState(encodedState string) (StateWithReturnTo, error) {
+	stateBytes, err := base64.URLEncoding.DecodeString(encodedState)
+	if err != nil {
+		slog.Error("Failed to decode base64 state:", "error", err)
+	}
+
+	var state StateWithReturnTo
+	if err := json.Unmarshal(stateBytes, &state); err != nil {
+		slog.Error("Failed to unmarshal JSON state:", "error", err)
+	}
+
+	return state, nil
+}
 
 // @Summary		Login Callback
 // @Description	CallbackHandler handles the OAuth callback, obtaining the GitHub's Bearer token
@@ -45,9 +65,29 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 		Path:     "/",
 	})
 
-	if state != oauthState.Value {
-		httputil.WriteError(res, http.StatusBadRequest, "invalid state parameter")
-		slog.Error("invalid state parameter", "expected", oauthState.Value, "got", state)
+	queryState, err := decodeState(state)
+	if err != nil {
+		slog.Error("error while decoding query state", "error", err)
+		httputil.WriteError(res, http.StatusInternalServerError, "error")
+		return
+	}
+
+	cookieState, err := decodeState(oauthState.Value)
+	if err != nil {
+		slog.Error("error while decoding oauth state", "error", err)
+		httputil.WriteError(res, http.StatusInternalServerError, "error")
+		return
+	}
+
+	if queryState.CSRF != cookieState.CSRF {
+		httputil.WriteError(res, http.StatusBadRequest, "error")
+		slog.Error("invalid csrf token", "expected", cookieState.CSRF, "got", queryState.CSRF)
+		return
+	}
+
+	if queryState.ReturnTo != cookieState.ReturnTo {
+		httputil.WriteError(res, http.StatusBadRequest, "error")
+		slog.Error("invalid return_to parameter", "expected", cookieState.ReturnTo, "got", queryState.ReturnTo)
 		return
 	}
 
@@ -124,6 +164,7 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 
 	redirectQuery := url.Values{}
 	redirectQuery.Set("session_token", tokenString)
+	redirectQuery.Set("return_to", cookieState.ReturnTo)
 
 	redirectURI.RawQuery = redirectQuery.Encode()
 
@@ -142,6 +183,7 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 func (a *Authenticator) LoginHandler(res http.ResponseWriter, req *http.Request) {
 	// Get the client redirect url
 	clientRedirectURL := req.URL.Query().Get("redirect_uri")
+	returnTo := req.URL.Query().Get("return_to")
 	if clientRedirectURL == "" {
 		httputil.WriteError(res, http.StatusBadRequest, "specify a redirect_uri url param")
 		return
@@ -170,7 +212,22 @@ func (a *Authenticator) LoginHandler(res http.ResponseWriter, req *http.Request)
 		slog.Error("could not generate random bytes for state", "error", err)
 		return
 	}
-	state := hex.EncodeToString(b)
+
+	csrf := hex.EncodeToString(b)
+
+	// include return_to into github URL
+	stateObj := StateWithReturnTo{
+		CSRF:     csrf,
+		ReturnTo: returnTo,
+	}
+
+	stateJSON, err := json.Marshal(stateObj)
+	if err != nil {
+		slog.Error("could not create json object for state", "error", err)
+	}
+
+	// url encoding
+	state := base64.URLEncoding.EncodeToString(stateJSON)
 
 	// Set state in a cookie
 	http.SetCookie(res, &http.Cookie{
