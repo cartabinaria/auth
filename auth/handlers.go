@@ -122,7 +122,7 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 		Path:     "/",
 	}
 
-	redirectQuery := url.Values{}
+	redirectQuery := redirectURI.Query()
 	redirectQuery.Set("session_token", tokenString)
 
 	redirectURI.RawQuery = redirectQuery.Encode()
