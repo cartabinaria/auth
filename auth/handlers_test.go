@@ -99,12 +99,28 @@ func checkSessionEvent(t *testing.T, logs *bytes.Buffer, want string) {
 	decoder := json.NewDecoder(logs)
 	count := 0
 	for {
-		var record map[string]any
-		err := decoder.Decode(&record)
+		_, err := decoder.Token()
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
+			t.Fatal(err)
+		}
+		record := make(map[string]any)
+		fields := 0
+		for decoder.More() {
+			key, err := decoder.Token()
+			if err != nil {
+				t.Fatal(err)
+			}
+			var value any
+			if err := decoder.Decode(&value); err != nil {
+				t.Fatal(err)
+			}
+			record[key.(string)] = value
+			fields++
+		}
+		if _, err := decoder.Token(); err != nil {
 			t.Fatal(err)
 		}
 		if record["level"] != "INFO" && record["msg"] != "session created" && record["msg"] != "session cookie cleared" {
@@ -114,7 +130,7 @@ func checkSessionEvent(t *testing.T, logs *bytes.Buffer, want string) {
 		if want == "" || record["msg"] != want || record["level"] != "INFO" {
 			t.Error("unexpected session event")
 		}
-		if len(record) != 3 || record["time"] == nil {
+		if fields != 3 || len(record) != 3 || record["time"] == nil {
 			t.Error("session event must contain only time, level, and a fixed message")
 		}
 	}
