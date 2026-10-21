@@ -128,6 +128,7 @@ func (a *Authenticator) CallbackHandler(res http.ResponseWriter, req *http.Reque
 	redirectURI.RawQuery = redirectQuery.Encode()
 
 	http.SetCookie(res, &cookie)
+	slog.Info("session created")
 	http.Redirect(res, req, redirectURI.String(), http.StatusSeeOther)
 }
 
@@ -220,6 +221,7 @@ func (a *Authenticator) LogoutHandler(res http.ResponseWriter, req *http.Request
 	}
 
 	http.SetCookie(res, &cookie)
+	slog.Info("session cookie cleared")
 	http.Redirect(res, req, clientRedirectURL, http.StatusSeeOther)
 }
 
